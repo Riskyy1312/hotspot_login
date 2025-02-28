@@ -31,6 +31,11 @@
         .login-card {
             background: var(--glass-effect);
             backdrop-filter: blur(12px);
+            @supports not (backdrop-filter: blur(12px)) {
+                background: rgba(0, 0, 0, 0.7);
+            }
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
             border-radius: 1.5rem;
             padding: 2rem;
             width: min(90%, 400px);
@@ -113,6 +118,81 @@
             letter-spacing: 0.5px;
         }
 
+        .input-group input.invalid {
+            border-color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .input-group input.invalid:focus {
+            box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.2);
+        }
+
+        .custom-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .custom-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            position: relative;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-checkbox:hover input ~ .checkmark {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .custom-checkbox input:checked ~ .checkmark {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 5px;
+            top: 0.5px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .custom-checkbox input:checked ~ .checkmark:after {
+            display: block;
+            animation: checkmarkPop 0.3s ease;
+        }
+
+        .label-text {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+        }
+
+        @keyframes checkmarkPop {
+            0% { transform: scale(1) rotate(45deg); }
+            50% { transform: scale(1.3) rotate(45deg); }
+            100% { transform: scale(1) rotate(45deg); }
+        }     
+
         button {
             width: 100%;
             padding: 1.2rem;
@@ -179,17 +259,31 @@
 
         .loading-spinner {
             display: none;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+            animation: spin 1s ease-in-out infinite;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.3s ease;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: translateX(-50%) rotate(0deg); }
+            100% { transform: translateX(-50%) rotate(360deg); }
+        }
+
+        .login-button {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .button-text {
+            transition: opacity 0.3s ease;
         }
 
         .error-message {
@@ -217,6 +311,7 @@
             margin-bottom: 0.5rem;
             animation: slideIn 0.3s ease-out;
             position: relative;
+            will-change: transform, opacity;
         }
 
         @keyframes slideIn {
@@ -235,8 +330,13 @@
         }
 
         .notification.success {
+            background: linear-gradient(145deg, rgba(0,200,81,0.15), rgba(0,200,81,0.1));
             border-color: #00c851;
             color: #00ff88;
+        }
+
+        .notification.success .close-btn {
+            display: none;
         }
 
         .notification-icon {
@@ -286,7 +386,7 @@
             <h1>Internet Sekolah<br><span style="font-size: 1rem;">SMA Negeri 2 Merauke</span></h1>
         </div>
 
-        <form class="login-form" method="post" action="$(link-login)">
+        <form class="login-form" method="post" action="$(link-login)" onsubmit="handleSubmit(event)">
             <div class="input-group">
                 <input type="text" name="username" id="username" placeholder=" ">
                 <label for="username">Username</label>
@@ -295,7 +395,7 @@
             <div class="input-group">
                 <input type="password" name="password" id="password" placeholder=" ">
                 <label for="password">Password</label>
-                <span class="password-toggle" onclick="togglePassword()">
+                <span class="password-toggle" onclick="togglePassword()" aria-label="Toggle Password Visibility" role="button">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>
@@ -304,8 +404,17 @@
                 <div class="error-message" id="password-error"></div>
             </div>
 
+            <div class="remember-me">
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="remember" id="remember">
+                  <span class="checkmark"></span>
+                  <span class="label-text">Ingat perangkat ini</span>
+                </label>
+              </div>
+
             <input type="hidden" name="dst" value="$(link-orig)">
             <input type="hidden" name="popup" value="true">
+            <input type="hidden" name="csrf_token" value="$(csrf-token)">
             
             <button type="submit" class="login-button">
                 <span class="button-text">Masuk</span>
@@ -314,8 +423,7 @@
         </form>
 
         <div class="footer">
-            <div class="notification-container" id="notifications">
-            </div>
+            <div class="notification-container" id="notifications" aria-live="polite"></div>
             
             <div class="hotspot-info">
                 <p>Gunakan akun sekolah yang terdaftar</p>
@@ -343,35 +451,129 @@
             }
         }
 
-        function handleSubmit(event) {
+        function saveSession(token, remember) {
+            if (remember) {
+                localStorage.setItem('sessionToken', token);
+            } else {
+                sessionStorage.setItem('sessionToken', token);
+            }
+        }
+
+        function checkSavedSession() {
+            const token = localStorage.getItem('sessionToken') || sessionStorage.getItem('sessionToken');
+            if (token) {
+                autoLogin(token);
+            }
+        }
+
+        async function autoLogin(token) {
+            try {
+                const response = await fetch('/api/auto-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    clearSession();
+                }
+            } catch (error) {
+                console.error('Auto-login failed:', error);
+                clearSession();
+            }
+        }
+
+        function clearSession() {
+            localStorage.removeItem('sessionToken');
+            sessionStorage.removeItem('sessionToken');
+        }
+
+        document.addEventListener('DOMContentLoaded', checkSavedSession);
+
+        async function handleSubmit(event) {
             event.preventDefault();
             const button = event.target.querySelector('button');
             const spinner = button.querySelector('.loading-spinner');
             const buttonText = button.querySelector('.button-text');
-            
+            const rememberMe = document.getElementById('remember').checked;
+
             button.disabled = true;
             buttonText.style.opacity = '0';
             spinner.style.display = 'block';
 
-            setTimeout(() => {
+            try {
+                const formData = new FormData(event.target);
+                const response = await fetch(event.target.action, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(Object.fromEntries(formData))
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    saveSession(result.token, rememberMe);
+                    showNotification('Login berhasil!, halaman akan tertutup secara otomatis', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 2000);
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Gagal terhubung ke server', 'error');
+            } finally {
                 spinner.style.display = 'none';
                 buttonText.style.opacity = '1';
                 button.disabled = false;
-            }, 2000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', validateForm);
+
+        function validateUsername(username) {
+            const nisnRegex = /^\d{10}$/;
+            return nisnRegex.test(username);
+        }
+
+        function validatePassword(password) {
+            return password.length >= 8;
         }
 
         document.getElementById('username').addEventListener('input', validateForm);
         document.getElementById('password').addEventListener('input', validateForm);
 
         function validateForm() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const button = document.querySelector('button[type="submit"]');
+            
+            const isValidUsername = validateUsername(username);
+            const isValidPassword = validatePassword(password);
+            
+            button.disabled = !(isValidUsername && isValidPassword);
+
+            document.getElementById('password-error').style.display = 
+                password.length > 0 && !isValidPassword ? 'block' : 'none';
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                document.activeElement.blur();
-            }
+        document.getElementById('username').addEventListener('input', function(e) {
+            const value = e.target.value.trim();
+            const isValid = validateUsername(value);
+            e.target.classList.toggle('invalid', !isValid);
+        });
+
+        document.getElementById('password').addEventListener('input', function(e) {
+            const value = e.target.value.trim();
+            const isValid = validatePassword(value);
+            e.target.classList.toggle('invalid', !isValid);
         });
 
         const customMessages = {
@@ -383,7 +585,7 @@
             'access denied': 'Akses ditolak - hubungi administrator'
         };
 
-        function showNotification(message, type = 'error') {
+        function showNotification(message, type = 'error', autoClose = true) {
             const notifications = document.getElementById('notifications');
             
             const notification = document.createElement('div');
@@ -395,6 +597,12 @@
                 success: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
             };
             
+            if (autoClose && type === 'success') {
+                setTimeout(() => {
+                    notification.remove();
+                }, 2500);
+            }
+
             notification.innerHTML = `
                 <div class="notification-icon">${icons[type]}</div>
                 <div class="notification-text">${customMessages[message.toLowerCase()] || message}</div>
@@ -407,6 +615,8 @@
             
             notifications.prepend(notification);
         }
+
+        document.getElementById('username').focus();
     </script>
 </body>
 </html>

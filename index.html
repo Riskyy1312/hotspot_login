@@ -537,16 +537,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', validateForm);
-
-        function validateUsername(username) {
-            const nisnRegex = /^\d{10}$/;
-            return nisnRegex.test(username);
-        }
-
-        function validatePassword(password) {
-            return password.length >= 8;
-        }
-
         document.getElementById('username').addEventListener('input', validateForm);
         document.getElementById('password').addEventListener('input', validateForm);
 
